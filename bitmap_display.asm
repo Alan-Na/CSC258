@@ -109,7 +109,7 @@ exit:
 
   ## The honrizontal line drawing function ##
   # - $a0: X coordinate of the start of the honrizontal line
-  # - #a1: Y coordinate of the start of the honrizontal line
+  # - $a1: Y coordinate of the start of the honrizontal line
   # - $a2: Length of the line
 draw_horizontal_line:
     add $t5, $zero, $zero   # loop variable $t5 = 0
@@ -131,7 +131,7 @@ pixel_draw_horizontal_end:
 
   ## The vertical line drawing function ##
   # - $a0: X coordinate of the start of the vertical line
-  # - #a1: Y coordinate of the start of the vertical line
+  # - $a1: Y coordinate of the start of the vertical line
   # - $a2: Length of the line
 draw_vertical_line:
   add $t5, $zero, $zero   # loop variable $t5 = 0
