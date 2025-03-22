@@ -1,33 +1,151 @@
-##############################################################################
-# Example: Displaying Pixels
-#
-# This file demonstrates how to draw pixels with different colours to the
-# bitmap display.
-##############################################################################
-
 ######################## Bitmap Display Configuration ########################
-# - Unit width in pixels: 8
-# - Unit height in pixels: 8
-# - Display width in pixels: 256
-# - Display height in pixels: 256
+# - Unit width in pixels: 2
+# - Unit height in pixels: 2
+# - Display width in pixels: 64
+# - Display height in pixels: 64
 # - Base Address for Display: 0x10008000 ($gp)
 ##############################################################################
-    .data
+.data
 ADDR_DSPL:
     .word 0x10008000
+COLOR_GREY:
+    .word 0x808080   # Grey
+COLOR_RED:    
+    .word 0xFF0000   # Red
+COLOR_GREEN:  
+    .word 0x00FF00   # Green
+COLOR_BLUE:   
+    .word 0x0000FF   # Blue
+COLORS:       
+    .word 0xFF0000, 0x00FF00, 0x0000FF  # Colours array
 
-    .text
-	.globl main
+.text
+.globl main
 
 main:
-    li $t1, 0xff0000        # $t1 = red
-    li $t2, 0x00ff00        # $t2 = green
-    li $t3, 0x0000ff        # $t3 = blue
+    lw $t0, ADDR_DSPL       # load bitmap address
+    lw $t1, COLOR_GREY        # load grey to $t1
 
-    lw $t0, ADDR_DSPL       # $t0 = base address for display
-    sw $t1, 0($t0)          # paint the first unit (i.e., top-left) red
-    sw $t2, 4($t0)          # paint the second unit on the first row green
-    sw $t3, 128($t0)        # paint the first unit on the second row blue
-exit:
-    li $v0, 10              # terminate the program gracefully
+## Draw the medicine bottle 
+    ## Draw horizontal lines ##
+    addi $a2, $zero, 7      # Length = 7
+    addi $a0, $zero, 2      # X = 2
+    addi $a1, $zero, 5      # Y = 5
+    jal draw_horizontal_line
+
+    addi $a2, $zero, 7      # Length = 7
+    addi $a0, $zero, 13     # X = 13
+    addi $a1, $zero, 5      # Y = 5
+    jal draw_horizontal_line
+
+    addi $a2, $zero, 18      # Length = 18
+    addi $a0, $zero, 2      # X = 2
+    addi $a1, $zero, 30      # Y = 30
+    jal draw_horizontal_line
+
+    ## Draw vertical lines ##
+    addi $a2, $zero, 26      # Length = 26
+    addi $a0, $zero, 2      # X = 2
+    addi $a1, $zero, 5      # Y = 5
+    jal draw_vertical_line
+
+    addi $a2, $zero, 26      # Length = 26
+    addi $a0, $zero, 20      # X = 20
+    addi $a1, $zero, 5      # Y = 5
+    jal draw_vertical_line
+
+    addi $a2, $zero, 3      # Length = 3
+    addi $a0, $zero, 9      # X = 9
+    addi $a1, $zero, 3      # Y = 3
+    jal draw_vertical_line
+
+    addi $a2, $zero, 3      # Length = 3
+    addi $a0, $zero, 13      # X = 13
+    addi $a1, $zero, 3      # Y = 3
+    jal draw_vertical_line
+
+## Draw the first two-halved capsule
+    # Generate a random upper colour
+    li $v0, 42          # system call：Generate a random number
+    li $a0, 0           # reset generator id to 0
+    li $a1, 3           # upperbound：3（0, 1, 2）
     syscall
+    move $t8, $a0       # load the generated number to $t8
+    sll $t8, $t8, 2     # number * 4（index of COLORS array）
+    lw $t1, COLORS($t8) # load the upper color into $t1
+
+    # Generate a random lower colour
+    li $v0, 42          
+    li $a0, 0          
+    li $a1, 3      
+    syscall
+    move $t9, $a0       # load the generated number to $t9
+    sll $t9, $t9, 2     # number * 4（index of COLORS array）
+    lw $t2, COLORS($t9) # load the lower color into $t2
+
+    ## Paint the capsule
+    lw $t3, ADDR_DSPL   # load bm address
+    li $t4, 11          # initial X coordinate
+    li $t5, 3          # initial Y coordinate
+    # Upper one
+    move $t7, $t3       # set $t7 as temporary register for bitmap location
+    sll $t6, $t5, 7     # calculate the Y offset：Y * 128
+    add $t7, $t7, $t6   # add vertical offset
+    sll $t6, $t4, 2     # calculate the X offset：X * 4
+    add $t7, $t7, $t6   # add horizontal offset
+    sw $t1, 0($t7)      # paint upper one
+    # Lower one
+    addi $t5, $t5, 1    # Y coordinate + 1（next row）
+    move $t7, $t3       # reset $t7 as bitmap address
+    sll $t6, $t5, 7     # calculate the new Y offset
+    add $t7, $t7, $t6   # add vertical offset
+    sll $t6, $t4, 2     # calculate the same X offset
+    add $t7, $t7, $t6   # final address
+    sw $t2, 0($t7)      # paint lower one
+
+exit:
+    li $v0, 10
+    syscall
+
+  ## The honrizontal line drawing function ##
+  # - $a0: X coordinate of the start of the honrizontal line
+  # - #a1: Y coordinate of the start of the honrizontal line
+  # - $a2: Length of the line
+draw_horizontal_line:
+    add $t5, $zero, $zero   # loop variable $t5 = 0
+    sll $t8, $a1, 7         # temporary register $t8 = offset of Y
+    add $t7, $t0, $t8       # calculate Y offset
+    sll $t9, $a0, 2         # temporary register $t9 = offset of X
+    add $t7, $t7, $t9       # calculate initial bm address
+
+pixel_draw_horizontal_start:
+    sw $t1, 0($t7)          # paint(Grey)
+    addi $t5, $t5, 1
+    addi $t7, $t7, 4
+    beq $t5, $a2, pixel_draw_horizontal_end
+    j pixel_draw_horizontal_start
+
+pixel_draw_horizontal_end:
+    jr $ra
+
+
+  ## The vertical line drawing function ##
+  # - $a0: X coordinate of the start of the vertical line
+  # - #a1: Y coordinate of the start of the vertical line
+  # - $a2: Length of the line
+draw_vertical_line:
+  add $t5, $zero, $zero   # loop variable $t5 = 0
+  sll $t8, $a1, 7         # temporary register $t8 = offset of Y
+  add $t7, $t0, $t8       # calculate Y offset
+  sll $t9, $a0, 2         # temporary register $t9 = offset of X
+  add $t7, $t7, $t9       # calculate initial bm address
+  
+pixel_draw_vertical_start:           # the starting label for the pixel drawing loop     
+  sw $t1, 0( $t7 )            # paint the current bitmap location.
+  addi $t5, $t5, 1            # increment the loop variable
+  addi $t7, $t7, 128            # move to the next pixel in the column.
+  beq $t5, $a2, pixel_draw_vertical_end    # break out of the loop if you hit the final pixel in the column
+  j pixel_draw_vertical_start          # otherwise, jump to the top of the loop
+  
+pixel_draw_vertical_end:             # the label for the end of the pixel drawing loop
+  jr $ra                      # return to calling program
