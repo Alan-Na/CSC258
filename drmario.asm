@@ -14,14 +14,15 @@
 # - Display height in pixels:   64
 # - Base Address for Display:   0x10008000 ($gp)
 ##############################################################################
+  .include "bitmap_display.asm"
 
     .data
 ##############################################################################
 # Immutable Data
 ##############################################################################
 # The address of the bitmap display. Don't forget to connect it!
-ADDR_DSPL:
-    .word 0x10008000
+# ADDR_DSPL:
+#     .word 0x10008000
 # The address of the keyboard. Don't forget to connect it!
 ADDR_KBRD:
     .word 0xffff0000
@@ -39,6 +40,12 @@ ADDR_KBRD:
     # Run the game.
 main:
     # Initialize the game
+    li $t0 0x10008000
+    li $a0 3
+    li $a1 4
+    li $a2 0xFF0000
+    li $a3 0xFF0000
+    
 
 game_loop:
     # 1a. Check if key has been pressed

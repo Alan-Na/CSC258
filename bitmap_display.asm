@@ -5,66 +5,15 @@
 # - Display height in pixels: 64
 # - Base Address for Display: 0x10008000 ($gp)
 ##############################################################################
-.data
-ADDR_DSPL:
-    .word 0x10008000
-COLOR_GREY:
-    .word 0x808080   # Grey
-COLOR_RED:    
-    .word 0xFF0000   # Red
-COLOR_GREEN:  
-    .word 0x00FF00   # Green
-COLOR_BLUE:   
-    .word 0x0000FF   # Blue
-COLORS:       
-    .word 0xFF0000, 0x00FF00, 0x0000FF  # Colours array
+.include "common.asm"
 
 .text
 .globl main
 
 main:
-    lw $t0, ADDR_DSPL       # load bitmap address
-    lw $t1, COLOR_GREY        # load grey to $t1
-    
 ##############################################################################
-## Draw the medicine bottle 
-    ## Draw horizontal lines ##
-    addi $a2, $zero, 7      # Length = 7
-    addi $a0, $zero, 2      # X = 2
-    addi $a1, $zero, 5      # Y = 5
-    jal draw_horizontal_line
+ jal draw_bottle
 
-    addi $a2, $zero, 7      # Length = 7
-    addi $a0, $zero, 13     # X = 13
-    addi $a1, $zero, 5      # Y = 5
-    jal draw_horizontal_line
-
-    addi $a2, $zero, 18      # Length = 18
-    addi $a0, $zero, 2      # X = 2
-    addi $a1, $zero, 30      # Y = 30
-    jal draw_horizontal_line
-
-    ## Draw vertical lines ##
-    addi $a2, $zero, 26      # Length = 26
-    addi $a0, $zero, 2      # X = 2
-    addi $a1, $zero, 5      # Y = 5
-    jal draw_vertical_line
-
-    addi $a2, $zero, 26      # Length = 26
-    addi $a0, $zero, 20      # X = 20
-    addi $a1, $zero, 5      # Y = 5
-    jal draw_vertical_line
-
-    addi $a2, $zero, 3      # Length = 3
-    addi $a0, $zero, 9      # X = 9
-    addi $a1, $zero, 3      # Y = 3
-    jal draw_vertical_line
-
-    addi $a2, $zero, 3      # Length = 3
-    addi $a0, $zero, 13      # X = 13
-    addi $a1, $zero, 3      # Y = 3
-    jal draw_vertical_line
-##############################################################################
 ## Draw the capsule in preparing area(right) --------Sample cases for drmario.asm
     # Generate a random upper colour
     li $v0, 42          # system call：Generate a random number
@@ -131,11 +80,59 @@ paint_capsule:
   jr $ra                    # return
   
 ##############################################################################
-  ## The honrizontal line drawing function ##
+  ## The medicine bottle drawing function
+draw_bottle:
+    addi $sp, $sp, -4         # adjust stack pointer
+    sw $ra, 0($sp)            # save $ra
+      
+    addi $a2, $zero, 7      # Length = 7
+    addi $a0, $zero, 2      # X = 2
+    addi $a1, $zero, 5      # Y = 5
+    jal draw_horizontal_line
+
+    addi $a2, $zero, 7      # Length = 7
+    addi $a0, $zero, 13     # X = 13
+    addi $a1, $zero, 5      # Y = 5
+    jal draw_horizontal_line
+
+    addi $a2, $zero, 18     # Length = 18
+    addi $a0, $zero, 2      # X = 2
+    addi $a1, $zero, 30     # Y = 30
+    jal draw_horizontal_line
+
+    ## Draw vertical lines ##
+    addi $a2, $zero, 26     # Length = 26
+    addi $a0, $zero, 2      # X = 2
+    addi $a1, $zero, 5      # Y = 5
+    jal draw_vertical_line
+
+    addi $a2, $zero, 26      # Length = 26
+    addi $a0, $zero, 20      # X = 20
+    addi $a1, $zero, 5       # Y = 5
+    jal draw_vertical_line
+
+    addi $a2, $zero, 3      # Length = 3
+    addi $a0, $zero, 9      # X = 9
+    addi $a1, $zero, 3      # Y = 3
+    jal draw_vertical_line
+
+    addi $a2, $zero, 3      # Length = 3
+    addi $a0, $zero, 13      # X = 13
+    addi $a1, $zero, 3      # Y = 3
+    jal draw_vertical_line
+
+    lw $ra, 0($sp)            # recover $ra
+    addi $sp, $sp, 4          # recover sp
+
+    jr $ra                 #return
+
+##############################################################################
+## The honrizontal line drawing function ##
   # - $a0: X coordinate of the start of the honrizontal line
   # - $a1: Y coordinate of the start of the honrizontal line
   # - $a2: Length of the line
 draw_horizontal_line:
+  lw $t0, ADDR_DSPL       # load bitmap address
   add $t5, $zero, $zero   # loop variable $t5 = 0
   sll $t8, $a1, 7         # temporary register $t8 = offset of Y
   add $t7, $t0, $t8       # calculate Y offset
@@ -143,6 +140,7 @@ draw_horizontal_line:
   add $t7, $t7, $t9       # calculate initial bm address
 
 pixel_draw_horizontal_start:
+  lw $t1, COLOR_GREY      # load grey to $t1
   sw $t1, 0($t7)          # paint(Grey)
   addi $t5, $t5, 1
   addi $t7, $t7, 4
@@ -152,19 +150,20 @@ pixel_draw_horizontal_start:
 pixel_draw_horizontal_end:
   jr $ra
 
-
   ## The vertical line drawing function ##
   # - $a0: X coordinate of the start of the vertical line
   # - $a1: Y coordinate of the start of the vertical line
   # - $a2: Length of the line
 draw_vertical_line:
+  lw $t0, ADDR_DSPL       # load bitmap address
   add $t5, $zero, $zero   # loop variable $t5 = 0
   sll $t8, $a1, 7         # temporary register $t8 = offset of Y
   add $t7, $t0, $t8       # calculate Y offset
   sll $t9, $a0, 2         # temporary register $t9 = offset of X
   add $t7, $t7, $t9       # calculate initial bm address
   
-pixel_draw_vertical_start:           # the starting label for the pixel drawing loop     
+pixel_draw_vertical_start:           # the starting label for the pixel drawing loop  
+  lw $t1, COLOR_GREY        # load grey to $t1
   sw $t1, 0( $t7 )            # paint the current bitmap location.
   addi $t5, $t5, 1            # increment the loop variable
   addi $t7, $t7, 128            # move to the next pixel in the column.
@@ -173,3 +172,12 @@ pixel_draw_vertical_start:           # the starting label for the pixel drawing 
   
 pixel_draw_vertical_end:             # the label for the end of the pixel drawing loop
   jr $ra                      # return to calling program
+
+
+
+
+
+
+
+
+
