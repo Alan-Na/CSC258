@@ -1,17 +1,17 @@
 ################# CSC258 Assembly Final Project ###################
 # This file contains our implementation of Dr Mario.
 #
-# Student 1: Name, Student Number
+# Student 1: Xineng Na, 1010194424
 # Student 2: Name, Student Number (if applicable)
 #
 # We assert that the code submitted here is entirely our own 
 # creation, and will indicate otherwise when it is not.
 #
 ######################## Bitmap Display Configuration ########################
-# - Unit width in pixels:       TODO
-# - Unit height in pixels:      TODO
-# - Display width in pixels:    TODO
-# - Display height in pixels:   TODO
+# - Unit width in pixels:       2
+# - Unit height in pixels:      2
+# - Display width in pixels:    64
+# - Display height in pixels:   64
 # - Base Address for Display:   0x10008000 ($gp)
 ##############################################################################
 

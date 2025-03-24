@@ -25,7 +25,8 @@ COLORS:
 main:
     lw $t0, ADDR_DSPL       # load bitmap address
     lw $t1, COLOR_GREY        # load grey to $t1
-
+    
+##############################################################################
 ## Draw the medicine bottle 
     ## Draw horizontal lines ##
     addi $a2, $zero, 7      # Length = 7
@@ -63,8 +64,8 @@ main:
     addi $a0, $zero, 13      # X = 13
     addi $a1, $zero, 3      # Y = 3
     jal draw_vertical_line
-
-## Draw the first two-halved capsule
+##############################################################################
+## Draw the capsule in preparing area(right) --------Sample cases for drmario.asm
     # Generate a random upper colour
     li $v0, 42          # system call：Generate a random number
     li $a0, 0           # reset generator id to 0
@@ -85,48 +86,71 @@ main:
 
     ## Paint the capsule
     lw $t3, ADDR_DSPL   # load bm address
-    li $t4, 11          # initial X coordinate
-    li $t5, 3          # initial Y coordinate
-    # Upper one
-    move $t7, $t3       # set $t7 as temporary register for bitmap location
-    sll $t6, $t5, 7     # calculate the Y offset：Y * 128
-    add $t7, $t7, $t6   # add vertical offset
-    sll $t6, $t4, 2     # calculate the X offset：X * 4
-    add $t7, $t7, $t6   # add horizontal offset
-    sw $t1, 0($t7)      # paint upper one
-    # Lower one
-    addi $t5, $t5, 1    # Y coordinate + 1（next row）
-    move $t7, $t3       # reset $t7 as bitmap address
-    sll $t6, $t5, 7     # calculate the new Y offset
-    add $t7, $t7, $t6   # add vertical offset
-    sll $t6, $t4, 2     # calculate the same X offset
-    add $t7, $t7, $t6   # final address
-    sw $t2, 0($t7)      # paint lower one
+    li $t4, 26          # preparing area X coordinate
+    li $t5, 7          # preparing area Y coordinate
+    # test case
+    move $a0, $t4       # X = 26
+    move $a1, $t5       # Y = 7
+    move $a2, $t1       # upper capsule color
+    move $a3, $t2
+    jal paint_capsule
 
 exit:
     li $v0, 10
     syscall
+    
+##############################################################################
+  ## The pixel painting function ##
+  # - $a0: X coordinate of the pixel
+  # - $a1: Y coordinate of the pixel
+  # - $a2: color of the pixel
+paint_pixel:
+  lw $t0, ADDR_DSPL
+  sll $t7, $a1, 7           # offset of Y
+  add $t8, $t0, $t7         # calculate Y offset
+  sll $t3, $a0, 2           # offset of X
+  add $t8, $t8, $t3         # calculate bm address
+  sw $a2, 0($t8)            # paint
+  jr $ra                    # return
 
+  ## The capsule drawing function ##
+  # - $a0: X coordinate of the capsule
+  # - $a1: Y coordinate of the capsule
+  # - $a2: upper capsule color
+  # - $a3: lower capsule color
+paint_capsule:
+  addi $sp, $sp, -4         # adjust stack pointer
+  sw $ra, 0($sp)            # save $ra
+  lw $t3, ADDR_DSPL         # load bm address
+  jal paint_pixel           # paint upper part
+  addi $a1, $a1, 1          # update pixel location
+  move $a2, $a3             # update pixel color
+  jal paint_pixel           # paint lower part
+  lw $ra, 0($sp)            # recover $ra
+  addi $sp, $sp, 4          # recover sp
+  jr $ra                    # return
+  
+##############################################################################
   ## The honrizontal line drawing function ##
   # - $a0: X coordinate of the start of the honrizontal line
   # - $a1: Y coordinate of the start of the honrizontal line
   # - $a2: Length of the line
 draw_horizontal_line:
-    add $t5, $zero, $zero   # loop variable $t5 = 0
-    sll $t8, $a1, 7         # temporary register $t8 = offset of Y
-    add $t7, $t0, $t8       # calculate Y offset
-    sll $t9, $a0, 2         # temporary register $t9 = offset of X
-    add $t7, $t7, $t9       # calculate initial bm address
+  add $t5, $zero, $zero   # loop variable $t5 = 0
+  sll $t8, $a1, 7         # temporary register $t8 = offset of Y
+  add $t7, $t0, $t8       # calculate Y offset
+  sll $t9, $a0, 2         # temporary register $t9 = offset of X
+  add $t7, $t7, $t9       # calculate initial bm address
 
 pixel_draw_horizontal_start:
-    sw $t1, 0($t7)          # paint(Grey)
-    addi $t5, $t5, 1
-    addi $t7, $t7, 4
-    beq $t5, $a2, pixel_draw_horizontal_end
-    j pixel_draw_horizontal_start
+  sw $t1, 0($t7)          # paint(Grey)
+  addi $t5, $t5, 1
+  addi $t7, $t7, 4
+  beq $t5, $a2, pixel_draw_horizontal_end
+  j pixel_draw_horizontal_start
 
 pixel_draw_horizontal_end:
-    jr $ra
+  jr $ra
 
 
   ## The vertical line drawing function ##
