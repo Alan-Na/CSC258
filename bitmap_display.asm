@@ -5,14 +5,10 @@
 # - Display height in pixels: 64
 # - Base Address for Display: 0x10008000 ($gp)
 ##############################################################################
-.include "common.asm"
-
 .text
-.globl main
 
-main:
+testmain1:
 ##############################################################################
- jal draw_bottle
 
 ## Draw the capsule in preparing area(right) --------Sample cases for drmario.asm
     # Generate a random upper colour
@@ -43,11 +39,9 @@ main:
     move $a2, $t1       # upper capsule color
     move $a3, $t2
     jal paint_capsule
-
-exit:
-    li $v0, 10
-    syscall
     
+    j main
+
 ##############################################################################
   ## The pixel painting function ##
   # - $a0: X coordinate of the pixel

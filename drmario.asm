@@ -14,18 +14,14 @@
 # - Display height in pixels:   64
 # - Base Address for Display:   0x10008000 ($gp)
 ##############################################################################
+  .include "common.asm"
   .include "bitmap_display.asm"
-
-    .data
+  .include "keyboard.asm"
 ##############################################################################
 # Immutable Data
 ##############################################################################
 # The address of the bitmap display. Don't forget to connect it!
-# ADDR_DSPL:
-#     .word 0x10008000
 # The address of the keyboard. Don't forget to connect it!
-ADDR_KBRD:
-    .word 0xffff0000
 
 ##############################################################################
 # Mutable Data
@@ -35,20 +31,24 @@ ADDR_KBRD:
 # Code
 ##############################################################################
 	.text
-	.globl main
-
     # Run the game.
 main:
     # Initialize the game
-    li $t0 0x10008000
-    li $a0 3
-    li $a1 4
-    li $a2 0xFF0000
-    li $a3 0xFF0000
+    lw $s0, X_position
+    lw $s1, Y_position
+    li $s2, 0x00FF00
+    li $s3, 0xFF0000
+    jal draw_bottle
+    li $t0, 0x10008000
+    lw $a0, X_position
+    lw $a1, Y_position
+    li $a2, 0x00FF00
+    li $a3, 0xFF0000
+    jal paint_capsule
     
-
 game_loop:
     # 1a. Check if key has been pressed
+    jal keyboard_input
     # 1b. Check which key has been pressed
     # 2a. Check for collisions
 	# 2b. Update locations (capsules)
@@ -57,3 +57,19 @@ game_loop:
 
     # 5. Go back to Step 1
     j game_loop
+
+move_down:
+  addi $s1, $s1, 1
+  lw $t0, ADDR_DSPL
+  add $a0, $s0, $zero
+  add $a1, $s1, $zero
+  li $a2, 0x00FF00
+  li $a3, 0xFF0000
+  jal paint_capsule
+  j game_loop
+move_right:
+
+move_left:
+
+rotate:
+  
