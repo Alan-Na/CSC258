@@ -5,12 +5,14 @@
 # - Display height in pixels: 64
 # - Base Address for Display: 0x10008000 ($gp)
 ##############################################################################
+
 .text
 
-testmain1:
+test_main1:
 ##############################################################################
-
-## Draw the capsule in preparing area(right) --------Sample cases for drmario.asm
+## Draw the capsule in preparing area(right) --------Sample code for drmario.asm
+    # draw the bottle
+    jal draw_bottle
     # Generate a random upper colour
     li $v0, 42          # system call：Generate a random number
     li $a0, 0           # reset generator id to 0
@@ -19,7 +21,7 @@ testmain1:
     move $t8, $a0       # load the generated number to $t8
     sll $t8, $t8, 2     # number * 4（index of COLORS array）
     lw $t1, COLORS($t8) # load the upper color into $t1
-
+    add $s2, $t1, $zero
     # Generate a random lower colour
     li $v0, 42          
     li $a0, 0          
@@ -28,18 +30,19 @@ testmain1:
     move $t9, $a0       # load the generated number to $t9
     sll $t9, $t9, 2     # number * 4（index of COLORS array）
     lw $t2, COLORS($t9) # load the lower color into $t2
+    add $s3, $t2, $zero
 
     ## Paint the capsule
     lw $t3, ADDR_DSPL   # load bm address
-    li $t4, 26          # preparing area X coordinate
-    li $t5, 7          # preparing area Y coordinate
+    li $t4, 11          # preparing area X coordinate
+    li $t5, 3          # preparing area Y coordinate
     # test case
     move $a0, $t4       # X = 26
     move $a1, $t5       # Y = 7
     move $a2, $t1       # upper capsule color
     move $a3, $t2
     jal paint_capsule
-    
+
     j main
 
 ##############################################################################
@@ -48,7 +51,7 @@ testmain1:
   # - $a1: Y coordinate of the pixel
   # - $a2: color of the pixel
 paint_pixel:
-  lw $t0, ADDR_DSPL
+  lw $t0, ADDR_DSPL         # load bitmap address
   sll $t7, $a1, 7           # offset of Y
   add $t8, $t0, $t7         # calculate Y offset
   sll $t3, $a0, 2           # offset of X
@@ -62,6 +65,10 @@ paint_pixel:
   # - $a2: upper capsule color
   # - $a3: lower capsule color
 paint_capsule:
+  beq $s4, 0, paint_vertical_capsule    # Check if the capsule is vertical
+  beq $s4, 1, paint_horizontal_capsule  # Check if the capsule is horizontal
+  
+paint_vertical_capsule:
   addi $sp, $sp, -4         # adjust stack pointer
   sw $ra, 0($sp)            # save $ra
   lw $t3, ADDR_DSPL         # load bm address
@@ -70,6 +77,40 @@ paint_capsule:
   move $a2, $a3             # update pixel color
   jal paint_pixel           # paint lower part
   lw $ra, 0($sp)            # recover $ra
+  addi $sp, $sp, 4          # recover sp
+  jr $ra                    # return
+
+paint_horizontal_capsule:
+  ## The horizontal capsule drawing function ##
+  # - $a0: X coordinate of the left part of the capsule
+  # - $a1: Y coordinate of the right part of the capsule
+  # - $a2: left capsule color
+  # - $a3: right capsule color
+  addi $sp, $sp, -4         # adjust stack pointer
+  sw $ra, 0($sp)            # save $ra
+  lw $t0, ADDR_DSPL         # load bm address
+  jal paint_pixel           # paint left part
+  addi $a0, $a0, 1          # update pixel location
+  move $a2, $a3             # update pixel color
+  jal paint_pixel           # paint lower part
+  lw $ra, 0($sp)            # recover $ra
+  addi $sp, $sp, 4          # recover sp
+  jr $ra                    # return
+  
+reset:
+  ## The bitmap resetting function ##
+  addi $sp, $sp, -4         # adjust sp
+  sw $ra, 0($sp)            # save ra
+  lw $t0, ADDR_DSPL         # load bitmap address
+  li $t1, 4096              # loop = 64x64 = 4096
+  lw $t2, COLOR_BLACK       # load black
+
+reset_loop:
+  sw $t2, 0($t0)            # paint black
+  addi $t0, $t0, 4          # move to next bit
+  addi $t1, $t1, -1         # remaining bits - 1
+  bgtz $t1, reset_loop      # if remaining bits, keep looping
+  lw $ra, 0($sp)            # recover ra
   addi $sp, $sp, 4          # recover sp
   jr $ra                    # return
   
@@ -166,12 +207,4 @@ pixel_draw_vertical_start:           # the starting label for the pixel drawing 
   
 pixel_draw_vertical_end:             # the label for the end of the pixel drawing loop
   jr $ra                      # return to calling program
-
-
-
-
-
-
-
-
 
