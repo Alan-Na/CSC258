@@ -36,6 +36,24 @@ main:
     # Initialize the game
     lw $s0, X_position   # Save the x positon in s0
     lw $s1, Y_position   # Save the y position in s1
+    # Generate random colors for capsule
+    # Upper part
+    li $v0, 42          # system call：Generate a random number
+    li $a0, 0           # reset generator id to 0
+    li $a1, 3           # upperbound：3（0, 1, 2）
+    syscall             # $a0 holds the generated number
+    sll $a0, $a0, 2     # number * 4（index of COLORS array）
+    lw $t1, COLORS($a0) # load the upper color into $t1
+    add $s2, $t1, $zero # store the color in $s2
+    # Lower part
+    li $v0, 42          # system call：Generate a random number
+    li $a0, 0           # reset generator id to 0
+    li $a1, 3           # upperbound：3（0, 1, 2）
+    syscall             # $a0 holds the generated number
+    sll $a0, $a0, 2     # number * 4（index of COLORS array）
+    lw $t1, COLORS($a0) # load the upper color into $t1
+    add $s3, $t1, $zero # store the color in $s2
+##############################################################################
     lw $s4, Horizontal   # Save the horizontal status in s4
     jal draw_bottle      # Draw the bottle
     lw $t0, ADDR_DSPL    
@@ -50,6 +68,7 @@ game_loop:
     # 1b. Check which key has been pressed
     jal testmain2
     # 2a. Check for collisions
+    
 	# 2b. Update locations (capsules)
 	# 3. Draw the screen
     jal reset              # reset the canvas to black
