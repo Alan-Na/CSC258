@@ -57,18 +57,18 @@ main:
     add $a2, $s5, $zero
     add $a3, $s6, $zero
     jal paint_vertical_capsule   # Draw side capsule    
-    
+  
 game_loop:
     # 1a. Check if key has been pressed
     # 1b. Check which key has been pressed
-    jal testmain2
+    jal poll_keyboard
     # 2a. Check for collisions
     
 	# 2b. Update locations (capsules)
 	# 3. Draw the screen
-    jal reset              # reset the canvas to black
-    jal draw_bottle        # Draw the bottle
-    # jal restore_grid        # restore the screen
+    # jal reset              # reset the canvas to black
+    # jal draw_bottle        # Draw the bottle
+    jal restore_grid        # restore the screen
     lw $t0, ADDR_DSPL      # Give the display address
     add $a0, $s0, $zero    # Give the X_position
     add $a1, $s1, $zero    # Give the Y_position
@@ -76,7 +76,11 @@ game_loop:
     add $a3, $s3, $zero    # Give the second color
     jal paint_capsule
 	# 4. Sleep
-
+# delay_loop:
+#     li   $t0, 10000000   # 设定延时计数（数值可根据需要调整）
+# delay:
+#     addi $t0, $t0, -1
+#     bgtz $t0, delay
     # 5. Go back to Step 1
     j game_loop
 
@@ -102,15 +106,17 @@ generate_new_capsule:
 # recover bitmap
 restore_grid:
     la   $t0, DRMARIO_GRID   # Saving address：DRMARIO_GRID
-    la   $t1, ADDR_DSPL      # target address
+    lw   $t1, ADDR_DSPL      # target address
     lw   $t2, GRID_SIZE      # bits to be copied
 restore_loop:
     beq  $t2, $zero, restore_end  # exit when finish
     lw   $t3, 0($t0)         # read a bit from DRMARIO_GRID
-    sw   $t3, 0($t1)         # write into memory
+    sw   $t3, 0($t1)         # into memory
     addi $t0, $t0, 4         # next bit
     addi $t1, $t1, 4
     addi $t2, $t2, -1        # count - 1
     j    restore_loop
 restore_end:
     jr   $ra                 # return
+
+

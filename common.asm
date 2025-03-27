@@ -32,7 +32,7 @@ COLORS:         .word  0xFF0000, 0x00FF00, 0x0000FF  # Colours array
 
 DRMARIO_GRID:   .space   16384     # space allocated for bitmap storing (64*64*4)
 
-GRID_SIZE:      .word    4096      # size of grid (64*64)
+GRID_SIZE:      .word    1024      # size of grid (64*64/2*2)
 
 X_prepare:      .word  26          # capsule in preparing area
 
