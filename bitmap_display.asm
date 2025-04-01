@@ -2,7 +2,7 @@
 # - Unit width in pixels: 2
 # - Unit height in pixels: 2
 # - Display width in pixels: 64
-# - Display height in pixels: 64
+# - Display height in pixels: 128
 # - Base Address for Display: 0x10008000 ($gp)
 ##############################################################################
 
@@ -51,12 +51,24 @@ test_main1:
   # - $a1: Y coordinate of the pixel
   # - $a2: color of the pixel
 paint_pixel:
+  addi $sp, $sp, -20       
+    sw   $t8, 0($sp)         # 保存 $t8 到 sp+0
+    sw   $t7, 4($sp)         # 保存 $t7 到 sp+4
+    sw   $t3, 8($sp)         # 保存 $t3 到 sp+8
+    sw   $t0, 12($sp)        # 保存 $t0 到 sp+12
+    sw   $ra, 16($sp)        # 保存 $ra 到 sp+16
   lw $t0, ADDR_DSPL         # load bitmap address
   sll $t7, $a1, 7           # offset of Y
   add $t8, $t0, $t7         # calculate Y offset
   sll $t3, $a0, 2           # offset of X
   add $t8, $t8, $t3         # calculate bm address
   sw $a2, 0($t8)            # paint
+    lw   $ra, 16($sp)       # 恢复 $ra
+    lw   $t0, 12($sp)       # 恢复 $t0
+    lw   $t3, 8($sp)        # 恢复 $t3
+    lw   $t7, 4($sp)        # 恢复 $t7
+    lw   $t8, 0($sp)        # 恢复 $t8
+    addi $sp, $sp, 20       # 释放栈空间
   jr $ra                    # return
 
   ## The capsule drawing function ##
@@ -160,7 +172,324 @@ draw_bottle:
     addi $sp, $sp, 4          # recover sp
 
     jr $ra                 #return
+##############################################################################
+draw_panel:
+  addi $sp, $sp, -4         # adjust stack pointer
+    sw $ra, 0($sp)
+    addi $a2, $zero, 6      # Length = 6
+    addi $a0, $zero, 26      # X = 26
+    addi $a1, $zero, 0      # Y = 1
+    jal draw_vertical_line
 
+    addi $a2, $zero, 15     # Length = 15
+    addi $a0, $zero, 11      # X = 11
+    addi $a1, $zero, 0     # Y = 0
+    jal draw_horizontal_line
+
+    addi $a2, $zero, 1     # Length = 1
+    addi $a0, $zero, 11      # X = 11
+    addi $a1, $zero, 1     # Y = 1
+    jal draw_horizontal_line
+
+    addi $a2, $zero, 5     # Length = 5
+    addi $a0, $zero, 24      # X = 24
+    addi $a1, $zero, 5     # Y = 0
+    jal draw_horizontal_line
+
+    addi $a2, $zero, 6      # Length = 6
+    addi $a0, $zero, 24      # X = 26
+    addi $a1, $zero, 5      # Y = 1
+    jal draw_vertical_line
+
+    addi $a2, $zero, 6      # Length = 6
+    addi $a0, $zero, 28      # X = 26
+    addi $a1, $zero, 5      # Y = 1
+    jal draw_vertical_line
+
+    addi $a2, $zero, 5     # Length = 15
+    addi $a0, $zero, 24      # X = 11
+    addi $a1, $zero, 10     # Y = 0
+    jal draw_horizontal_line
+
+    lw $ra, 0($sp)            # recover $ra
+    addi $sp, $sp, 4
+    jr $ra
+
+##############################################################################
+draw_pause:
+    addi $sp, $sp, -4         # adjust stack pointer
+    sw $ra, 0($sp) 
+## P
+    addi $a2, $zero, 7      # Length = 6
+    addi $a0, $zero, 22      # X = 26
+    addi $a1, $zero, 13      # Y = 1
+    jal draw_vertical_line
+
+    addi $a2, $zero, 3      # Length = 6
+    addi $a0, $zero, 25      # X = 26
+    addi $a1, $zero, 13      # Y = 1
+    jal draw_vertical_line
+
+    addi $a2, $zero, 4      # Length = 6
+    addi $a0, $zero, 22      # X = 26
+    addi $a1, $zero, 13      # Y = 1
+    jal draw_horizontal_line
+
+    addi $a2, $zero, 4      # Length = 6
+    addi $a0, $zero, 22      # X = 26
+    addi $a1, $zero, 16      # Y = 1
+    jal draw_horizontal_line
+## A
+    la $a0, 29
+    la $a1, 13
+    lw $a2, COLOR_RED
+    jal paint_pixel
+    la $a0, 28
+    la $a1, 14
+    lw $a2, COLOR_RED
+    jal paint_pixel
+    la $a0, 28
+    la $a1, 15
+    lw $a2, COLOR_RED
+    jal paint_pixel
+    la $a0, 27
+    la $a1, 16
+    lw $a2, COLOR_RED
+    jal paint_pixel
+    la $a0, 27
+    la $a1, 17
+    lw $a2, COLOR_RED
+    jal paint_pixel
+    la $a0, 27
+    la $a1, 18
+    lw $a2, COLOR_RED
+    jal paint_pixel
+    la $a0, 27
+    la $a1, 19
+    lw $a2, COLOR_RED
+    jal paint_pixel
+    la $a0, 30
+    la $a1, 14
+    lw $a2, COLOR_RED
+    jal paint_pixel
+    la $a0, 30
+    la $a1, 15
+    lw $a2, COLOR_RED
+    jal paint_pixel
+    la $a0, 31
+    la $a1, 16
+    lw $a2, COLOR_RED
+    jal paint_pixel
+    la $a0, 31
+    la $a1, 17
+    lw $a2, COLOR_RED
+    jal paint_pixel
+    la $a0, 31
+    la $a1, 18
+    lw $a2, COLOR_RED
+    jal paint_pixel
+    la $a0, 31
+    la $a1, 19
+    lw $a2, COLOR_RED
+    jal paint_pixel
+    la $a0, 28
+    la $a1, 16
+    lw $a2, COLOR_RED
+    jal paint_pixel
+    la $a0, 29
+    la $a1, 16
+    lw $a2, COLOR_RED
+    jal paint_pixel
+    la $a0, 30
+    la $a1, 16
+    lw $a2, COLOR_RED
+    jal paint_pixel
+
+## U
+    la $a0, 21
+    la $a1, 21
+    lw $a2, COLOR_BLUE
+    jal paint_pixel
+    la $a0, 21
+    la $a1, 22
+    lw $a2, COLOR_BLUE
+    jal paint_pixel
+    la $a0, 21
+    la $a1, 23
+    lw $a2, COLOR_BLUE
+    jal paint_pixel
+    la $a0, 21
+    la $a1, 24
+    lw $a2, COLOR_BLUE
+    jal paint_pixel
+    la $a0, 21
+    la $a1, 25
+    lw $a2, COLOR_BLUE
+    jal paint_pixel
+    la $a0, 21
+    la $a1, 26
+    lw $a2, COLOR_BLUE
+    jal paint_pixel
+    la $a0, 22
+    la $a1, 26
+    lw $a2, COLOR_BLUE
+    jal paint_pixel
+    la $a0, 23
+    la $a1, 26
+    lw $a2, COLOR_BLUE
+    jal paint_pixel
+    la $a0, 24
+    la $a1, 21
+    lw $a2, COLOR_BLUE
+    jal paint_pixel
+    la $a0, 24
+    la $a1, 22
+    lw $a2, COLOR_BLUE
+    jal paint_pixel
+    la $a0, 24
+    la $a1, 23
+    lw $a2, COLOR_BLUE
+    jal paint_pixel
+    la $a0, 24
+    la $a1, 24
+    lw $a2, COLOR_BLUE
+    jal paint_pixel
+    la $a0, 24
+    la $a1, 25
+    lw $a2, COLOR_BLUE
+    jal paint_pixel
+    la $a0, 24
+    la $a1, 26
+    lw $a2, COLOR_BLUE
+    jal paint_pixel
+
+## S
+    la $a0, 25
+    la $a1, 21
+    lw $a2, COLOR_GREEN
+    jal paint_pixel
+    la $a0, 25
+    la $a1, 22
+    lw $a2, COLOR_GREEN
+    jal paint_pixel
+    la $a0, 25
+    la $a1, 23
+    lw $a2, COLOR_GREEN
+    jal paint_pixel
+    la $a0, 26
+    la $a1, 21
+    lw $a2, COLOR_GREEN
+    jal paint_pixel
+    la $a0, 27
+    la $a1, 21
+    lw $a2, COLOR_GREEN
+    jal paint_pixel
+    la $a0, 28
+    la $a1, 23
+    lw $a2, COLOR_GREEN
+    jal paint_pixel
+    la $a0, 26
+    la $a1, 23
+    lw $a2, COLOR_GREEN
+    jal paint_pixel
+    la $a0, 28
+    la $a1, 21
+    lw $a2, COLOR_GREEN
+    jal paint_pixel
+    la $a0, 27
+    la $a1, 23
+    lw $a2, COLOR_GREEN
+    jal paint_pixel
+    la $a0, 28
+    la $a1, 24
+    lw $a2, COLOR_GREEN
+    jal paint_pixel
+    la $a0, 28
+    la $a1, 26
+    lw $a2, COLOR_GREEN
+    jal paint_pixel
+    la $a0, 25
+    la $a1, 26
+    lw $a2, COLOR_GREEN
+    jal paint_pixel
+    la $a0, 26
+    la $a1, 26
+    lw $a2, COLOR_GREEN
+    jal paint_pixel
+    la $a0, 27
+    la $a1, 26
+    lw $a2, COLOR_GREEN
+    jal paint_pixel
+    la $a0, 28
+    la $a1, 26
+    lw $a2, COLOR_GREEN
+    jal paint_pixel
+    la $a0, 28
+    la $a1, 25
+    lw $a2, COLOR_GREEN
+    jal paint_pixel
+    la $a0, 27
+    la $a1, 23
+    lw $a2, COLOR_GREEN
+    jal paint_pixel
+    la $a0, 25
+    la $a1, 23
+    lw $a2, COLOR_GREEN
+    jal paint_pixel
+## E
+    la $a0, 29
+    la $a1, 21
+    lw $a2, COLOR_YELLOW
+    jal paint_pixel
+    la $a0, 30
+    la $a1, 21
+    lw $a2, COLOR_YELLOW
+    jal paint_pixel
+    la $a0, 31
+    la $a1, 21
+    lw $a2, COLOR_YELLOW
+    jal paint_pixel
+    la $a0, 29
+    la $a1, 22
+    lw $a2, COLOR_YELLOW
+    jal paint_pixel
+    la $a0, 29
+    la $a1, 23
+    lw $a2, COLOR_YELLOW
+    jal paint_pixel
+    la $a0, 29
+    la $a1, 24
+    lw $a2, COLOR_YELLOW
+    jal paint_pixel
+    la $a0, 29
+    la $a1, 25
+    lw $a2, COLOR_YELLOW
+    jal paint_pixel
+    la $a0, 29
+    la $a1, 26
+    lw $a2, COLOR_YELLOW
+    jal paint_pixel
+    la $a0, 30
+    la $a1, 23
+    lw $a2, COLOR_YELLOW
+    jal paint_pixel
+    la $a0, 31
+    la $a1, 23
+    lw $a2, COLOR_YELLOW
+    jal paint_pixel
+    la $a0, 30
+    la $a1, 26
+    lw $a2, COLOR_YELLOW
+    jal paint_pixel
+    la $a0, 31
+    la $a1, 26
+    lw $a2, COLOR_YELLOW
+    jal paint_pixel
+    
+    lw $ra, 0($sp)            # recover $ra
+    addi $sp, $sp, 4
+
+    jr $ra
 ##############################################################################
 ## The honrizontal line drawing function ##
   # - $a0: X coordinate of the start of the honrizontal line
@@ -207,4 +536,38 @@ pixel_draw_vertical_start:           # the starting label for the pixel drawing 
   
 pixel_draw_vertical_end:             # the label for the end of the pixel drawing loop
   jr $ra                      # return to calling program
+##############################################################################
+draw_drmario:
+    addi $sp, $sp, -4         # adjust stack pointer
+    sw $ra, 0($sp)            # save $ra
+    # 加载三个数组的起始地址到临时寄存器中
+    la   $t0, x_coords      # $t0 指向 x 坐标数组
+    la   $t1, y_coords      # $t1 指向 y 坐标数组
+    la   $t2, drmario_colors        # $t2 指向颜色数组
 
+    li   $t3, 1108          # 循环计数器：数据总数
+
+draw_drmario_loop:
+    beq  $t3, $zero, draw_drmario_end  # 当计数器为0时结束循环
+
+    lw   $a0, 0($t0)        # 取出当前的 x 坐标，传入 $a0
+    lw   $a1, 0($t1)        # 取出当前的 y 坐标，传入 $a1
+    lw   $a2, 0($t2)        # 取出当前的颜色，传入 $a2
+
+    jal  paint_pixel        # 调用 paint_pixel（注意 paint_pixel 必须遵循 caller-saved 约定）
+
+    # 更新指针，指向下一个数据
+    addi $t0, $t0, 4        # 下一个 x 坐标（每个 .word 占4字节）
+    addi $t1, $t1, 4        # 下一个 y 坐标
+    addi $t2, $t2, 4        # 下一个颜色
+
+    addi $t3, $t3, -1       # 循环计数器减1
+    j    draw_drmario_loop  # 跳回循环开始
+
+draw_drmario_end:
+    lw $ra, 0($sp)            # recover $ra
+    addi $sp, $sp, 4          # recover sp
+    jr   $ra                # 返回调用者
+
+
+  
