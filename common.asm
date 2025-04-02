@@ -50,7 +50,7 @@ lastTime:   .word 0                # 当前播放的音符索引
 
 instrument: .word 100               # 乐器（2=钢琴
 
-noteCount:  .word 2282                # 总音符数
+noteCount:  .word 1400          # 总音符数
 
 base_time:   .word 0    # Base time for music timing
 
