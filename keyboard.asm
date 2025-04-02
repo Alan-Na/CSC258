@@ -12,7 +12,7 @@ poll_keyboard:
     li      $v0, 32
     li      $a0, 1
     syscall
-
+    
     lw      $t0, ADDR_KBRD        # $t0 = keyboard base address
     lw      $t8, 0($t0)           # 读取键盘状态
     jal     save_grid        # 每次调用都先保存当前显示的bitmap
@@ -36,10 +36,9 @@ keyboard_input:                   # A key is pressed
     beq     $a0, 0x64, respond_to_D   # If 'd' pressed
     beq     $a0, 0x73, respond_to_S   # If 's' pressed
     beq     $a0, 0x77, respond_to_W   # If 'w' pressed
-    li      $v0, 1
-    syscall
-
+    beq     $a0, 0x70, respond_to_P   # If 'p' pressed
     j       poll_keyboard              # Loop back
+    
 check_if_yellow:
     la $t1, DRMARIO_GRID
     lw $t5, COLOR_YELLOW
@@ -54,6 +53,12 @@ check_if_yellow:
     jr $ra
 ##############################################################################
 respond_to_A:
+    li $v0, 31
+    li $a0, 60
+    li $a1, 100
+    li $a2, 58
+    li $a3, 127
+    syscall
     # Respond to key 'a': move capsule left
     # 根据 $s4 判断移动方向
     beq     $s4, $zero, vertical_A
@@ -74,8 +79,20 @@ vertical_A:
     jal horizontal_collision_when_vertical_left
     beq $v0, 1, End_A
     addi    $s0, $s0, -1          # move X position right by 1 (logic per original)
-    j       check_drawable_A
+    j       check_drawable_A_first
 
+check_drawable_A_first:
+    la $t1, DRMARIO_GRID
+    lw $t5, COLOR_BLACK
+    sll $t2, $s1, 7
+    add $t3, $t1, $t2
+    sll $t4, $s0, 2
+    add $t3, $t3, $t4
+
+    lw  $t6, 256($t3)
+    beq $t6, $t5, check_drawable_A
+    j  End_A
+    
 check_drawable_A:
     la $t1, DRMARIO_GRID
     lw $t5, COLOR_BLACK
@@ -116,6 +133,12 @@ draw_capsule_outline_A:
 
 ##############################################################################
 respond_to_D:
+    li $v0, 31
+    li $a0, 60
+    li $a1, 100
+    li $a2, 58
+    li $a3, 127
+    syscall
     # Respond to key 'd': move capsule right
     # 根据 $s4 判断移动方向
     beq     $s4, $zero, vertical_D
@@ -136,11 +159,23 @@ vertical_D:
     jal horizontal_collision_when_vertical_right
     beq $v0, 1, End_D
     addi    $s0, $s0, 1          # move X position right by 1 (logic per original)
-    j       check_drawable_D
+    j       check_drawable_D_first
 
 End_D:
   jal save_capsule
   j      poll_keyboard_return
+
+check_drawable_D_first:
+    la $t1, DRMARIO_GRID
+    lw $t5, COLOR_BLACK
+    sll $t2, $s1, 7
+    add $t3, $t1, $t2
+    sll $t4, $s0, 2
+    add $t3, $t3, $t4
+
+    lw  $t6, 256($t3)
+    beq $t6, $t5, check_drawable_D
+    j  End_D
 
 check_drawable_D:
     la $t1, DRMARIO_GRID
@@ -177,18 +212,33 @@ draw_capsule_outline_D:
   j End_D
 ##############################################################################
 respond_to_S:
+    li $v0, 31
+    li $a0, 60
+    li $a1, 100
+    li $a2, 40
+    li $a3, 127
+    syscall
     addi $sp, $sp, -4
     sw $ra, 0($sp)
     move $a0, $s0
     move $a1, $s1
     jal Detect_vertical_collision
     beq $v0, $zero, increase_Y_coordinate
+    jal game_over_X
     addi $sp, $sp, -4
     sw $v0, 0($sp)
     addi $sp, $sp, -4
     sw $v1, 0($sp)
     j  detect_4
-
+    
+game_over_X:
+  beq $s0, 11, game_over_Y
+  jr $ra
+  
+game_over_Y:
+  beq $s1, 3, draw_game_over
+  jr $ra
+  
 increase_Y_coordinate:
     addi    $s1, $s1, 1          # move Y position down by 1
     j       End_S
@@ -213,6 +263,12 @@ detect_4:
   j      poll_keyboard_return
 ##############################################################################
 respond_to_W:
+    li $v0, 31
+    li $a0, 60
+    li $a1, 100
+    li $a2, 50
+    li $a3, 127
+    syscall
     # Respond to key 'w': rotate capsule
     move    $a0, $s0
     move    $a1, $s1
@@ -234,8 +290,20 @@ vertical_capsule:
 horizontal_capsule:
     addi    $s1, $s1, -1         # move Y position up by 1
     li      $s4, 0              # set capsule orientation to vertical (0)
-    j       check_drawable_W
+    j       check_drawable_W_first
+    
+check_drawable_W_first:
+    la $t1, DRMARIO_GRID
+    lw $t5, COLOR_BLACK
+    sll $t2, $s1, 7
+    add $t3, $t1, $t2
+    sll $t4, $s0, 2
+    add $t3, $t3, $t4
 
+    lw  $t6, 128($t3)
+    beq $t6, $t5, check_drawable_W
+    j  End_W
+    
 check_drawable_W:
     la $t1, DRMARIO_GRID
     lw $t5, COLOR_BLACK
@@ -275,7 +343,60 @@ End_W:
     j      poll_keyboard_return
 
 ##############################################################################
+respond_to_P:
+  jal save_capsule
+  jal    pause
+  j      poll_keyboard_return
+
+##############################################################################
 respond_to_Q:
+    # Note 1: E4
+    li $v0, 33       # Syscall 31 (MIDI Out)
+    li $a0, 127       # pitch = 64 (E4)
+    li $a1, 500      # duration = 300 ms
+    li $a2, 0        # instrument = 0 (Acoustic Grand Piano)
+    li $a3, 100      # volume = 100
+    syscall
+
+    # Note 2: G4
+    li $v0, 33
+    li $a0, 107       # G4
+    li $a1, 500
+    li $a2, 0
+    li $a3, 100
+    syscall
+
+    # Note 3: E4
+    li $v0, 33
+    li $a0, 87       # E4
+    li $a1, 500
+    li $a2, 0
+    li $a3, 100
+    syscall
+
+    # Note 4: C4
+    li $v0, 33
+    li $a0, 67       # C4
+    li $a1, 500
+    li $a2, 0
+    li $a3, 100
+    syscall
+
+    # Note 5: D4
+    li $v0, 33
+    li $a0, 47       # D4
+    li $a1, 500
+    li $a2, 0
+    li $a3, 100
+    syscall
+
+    # Note 6: G3 (可让它稍长一点,有结束感)
+    li $v0, 33
+    li $a0, 27       # G3
+    li $a1, 2000
+    li $a2, 0
+    li $a3, 100
+    syscall
     # Respond to key 'q': quit gracefully
     li      $v0, 10
     syscall
@@ -456,6 +577,7 @@ vertical_collision_when_vertical:
 not_black_1:
   li $v0, 2
   j End_Vertical_Detect_1
+  
 all_black_1:
   li $v0, 0
   j End_Vertical_Detect_1
@@ -840,6 +962,42 @@ no_match_2x2:
     li    $v0, 0
     li    $v1, 0
     jr    $ra
+
+    
+##############################################################################
+# Function to pause
+pause:
+    # Save return address and registers we'll use
+    addi $sp, $sp, -4
+    sw $ra, 0($sp)
+    
+    # Draw PAUSED text
+    jal draw_pause
+
+pause_loop:
+    jal play_background_music
+    # Check for keyboard input
+    lw $t0, ADDR_KBRD    # Load keyboard address
+    lw $t1, 0($t0)       # Get keyboard ready bit
+    beq $t1, $zero, pause_loop  # If no input, keep waiting
+    
+    # Get the key that was pressed
+    lw $t0, 4($t0)       # Get the key value
+    li $t1, 0x70
+    bne $t0, $t1, pause_loop  # If not 'p', keep waiting
+    
+    jal play_background_music
+    # Clear PAUSED text by drawing black rectangles
+    #li $a0, 26
+   # li $a1, 11
+    #li $a2, 11
+   # li $a3, 6
+   # jal draw_rect
+    
+    # Restore registers and return
+    lw $ra, 0($sp)            # recover $ra
+    addi $sp, $sp, 4
+    jr $ra 
 
 
 

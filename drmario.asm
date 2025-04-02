@@ -11,7 +11,7 @@
 # - Unit width in pixels:       2
 # - Unit height in pixels:      2
 # - Display width in pixels:    64
-# - Display height in pixels:   64
+# - Display height in pixels:   240
 # - Base Address for Display:   0x10008000 ($gp)
 ##############################################################################
   .include "common.asm"
@@ -30,6 +30,59 @@
 ##############################################################################
 	.text
     # Run the game.
+
+complete_reset:
+    jal reset_registers
+    jal reset_memory
+    li $v0, 0
+    li $a0, 0
+    j main
+
+reset_registers:
+  # Clear all general purpose registers
+    li $v0, 0
+    li $v1, 0
+    li $a0, 0
+    li $a1, 0
+    li $a2, 0
+    li $a3, 0
+    li $t0, 0
+    li $t1, 0
+    li $t2, 0
+    li $t3, 0
+    li $t4, 0
+    li $t5, 0
+    li $t6, 0
+    li $t7, 0
+    li $s0, 0
+    li $s1, 0
+    li $s2, 0
+    li $s3, 0
+    li $s4, 0
+    li $s5, 0
+    li $s6, 0
+    li $s7, 0
+    li $t8, 0
+    li $t9, 0
+    li $k0, 0
+    li $k1, 0
+    li $gp, 0
+    li $sp, 0x7fffeffc  # Reset stack pointer to typical initial value
+    li $fp, 0
+    jr $ra
+
+reset_memory:
+  lw $t0, ADDR_DSPL
+  li $t1, 0x1000FD82
+  li $t2, 0
+
+clear_loop:
+  sw $t2, 0($t0)
+  addi $t0, $t0, 4
+  blt $t0, $t1, clear_loop
+  jr $ra
+
+  
 main:
     # Initialize the game
     lw $s0, X_position       # Save the x positon in s0
@@ -61,11 +114,7 @@ main:
     add $a3, $s6, $zero
     jal paint_vertical_capsule   # Draw side capsule    
     
-    jal save_grid
-    move $a0, $s0
-    move $t1, $s1
-    addi $a1, $t1, 2
-    jal capsule_outline
+
 
    ###############################################################################
     # Generate 4 viruses in random places in the bottle
@@ -93,6 +142,12 @@ main:
     move $a2, $t3
     jal paint_pixel
 
+    ####################################################################
+    jal save_grid
+    move $a0, $s0
+    move $t1, $s1
+    addi $a1, $t1, 2
+    jal capsule_outline
     
 game_loop:
   jal play_background_music
@@ -107,13 +162,12 @@ game_loop:
     lw $t0, ADDR_DSPL # Give the display address
     li $t1, 2
     beq $v0, $t1, make_new_capsule
-    li $t1, 2
 	# 4. Sleep
 # delay_loop:
-#     li   $t0, 10000000   # 设定延时计数（数值可根据需要调整）
-# delay:
-#     addi $t0, $t0, -1
-#     bgtz $t0, delay
+  #   li   $t0, 10000000   # 设定延时计数（数值可根据需要调整）
+ #delay:
+   # addi $t0, $t0, -1
+   # bgtz $t0, delay
     # 5. Go back to Step 1
     j game_loop
 ##############################################################################
@@ -176,13 +230,32 @@ make_new_capsule:
     add $a3, $s6, $zero
     jal paint_vertical_capsule   # Draw side capsule    
 
+    jal make_new_outline
+
+    j game_loop
+    
+make_new_outline:
+  addi $sp, $sp, -4
+  sw   $ra, 0($sp)
+    la $t1, DRMARIO_GRID
+    lw $t5, COLOR_BLACK
+    sll $t2, $s1, 7
+    add $t3, $t1, $t2
+    sll $t4, $s0, 2
+    add $t3, $t3, $t4
+
+    lw  $t6, 384($t3)
+    beq $t6, $t5, End_make_new_outline
+    jr $ra
+
+End_make_new_outline:
     move $a0, $s0
     move $t1, $s1
     addi $a1, $t1, 2
     jal capsule_outline
-
-    j game_loop
-
+    lw $ra, 0($sp)
+    addi $sp, $sp, 4
+    jr $ra
 #########################################################################################
 capsule_outline_loop:
   jal Detect_vertical_collision
@@ -303,11 +376,11 @@ generate_viruses:
     
  # Generate random number in range [6,29]
     li $a0, 0              # ID of random number generator
-    li $a1, 24             # Upper bound (exclusive) of range (29-6+1=24)
+    li $a1, 14             # Upper bound (exclusive) of range (29-6+1=24)
     li $v0, 42             # Syscall 42: random int range
     syscall
     
-    addi $a0, $a0, 6       # Add 6 to shift range from [0,23] to [6,29]
+    addi $a0, $a0, 16       # Add 6 to shift range from [0,23] to [6,29]
     move $t2, $a0
     
  # Generate a random color
