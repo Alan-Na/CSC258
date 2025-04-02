@@ -45,6 +45,7 @@ main:
     jal draw_bottle      # Draw the bottle
     jal draw_panel
     jal draw_drmario
+    jal draw_virus
     lw $t0, ADDR_DSPL    
     lw $a0, X_position
     lw $a1, Y_position
@@ -66,7 +67,32 @@ main:
     addi $a1, $t1, 2
     jal capsule_outline
 
-  
+   ###############################################################################
+    # Generate 4 viruses in random places in the bottle
+    jal generate_viruses
+    move $a0, $t1
+    move $a1, $t2
+    move $a2, $t3
+    jal paint_pixel
+
+    jal generate_viruses
+    move $a0, $t1
+    move $a1, $t2
+    move $a2, $t3
+    jal paint_pixel
+
+    jal generate_viruses
+    move $a0, $t1
+    move $a1, $t2
+    move $a2, $t3
+    jal paint_pixel
+
+    jal generate_viruses
+    move $a0, $t1
+    move $a1, $t2
+    move $a2, $t3
+    jal paint_pixel
+
     
 game_loop:
   jal play_background_music
@@ -81,6 +107,7 @@ game_loop:
     lw $t0, ADDR_DSPL # Give the display address
     li $t1, 2
     beq $v0, $t1, make_new_capsule
+    li $t1, 2
 	# 4. Sleep
 # delay_loop:
 #     li   $t0, 10000000   # 设定延时计数（数值可根据需要调整）
@@ -89,6 +116,7 @@ game_loop:
 #     bgtz $t0, delay
     # 5. Go back to Step 1
     j game_loop
+##############################################################################
 
 ##############################################################################
 ## generating new capsule function
@@ -262,4 +290,35 @@ music_done:
     
     jr $ra
 
+####################################################################################
+generate_viruses:
+    # Generate random number in range [3,19]
+    li $a0, 0              # ID of random number generator
+    li $a1, 17             # Upper bound (exclusive) of range (19-3+1=17)
+    li $v0, 42             # Syscall 42: random int range
+    syscall
+    
+    addi $a0, $a0, 3       # Add 3 to shift range from [0,16] to [3,19]
+    move $t1, $a0
+    
+ # Generate random number in range [6,29]
+    li $a0, 0              # ID of random number generator
+    li $a1, 24             # Upper bound (exclusive) of range (29-6+1=24)
+    li $v0, 42             # Syscall 42: random int range
+    syscall
+    
+    addi $a0, $a0, 6       # Add 6 to shift range from [0,23] to [6,29]
+    move $t2, $a0
+    
+ # Generate a random color
+    li $v0, 42          # system call：Generate a random number
+    li $a0, 0           # reset generator id to 0
+    li $a1, 3           # upperbound：3（0, 1, 2）
+    syscall             # $a0 holds the generated number
+    
+    sll $a0, $a0, 2     # number * 4（index of COLORS array）
+    lw $t3, COLORS($a0) # load the upper color into $t1
+
+    jr $ra
+    
   

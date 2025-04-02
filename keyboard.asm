@@ -89,6 +89,7 @@ check_drawable_A:
     j  End_A
 
 check_drawable_horizontal_A:
+    beq $s4, 0, draw_capsule_outline_A
     la $t1, DRMARIO_GRID
     lw $t5, COLOR_BLACK
     sll $t2, $s1, 7
@@ -150,8 +151,22 @@ check_drawable_D:
     add $t3, $t3, $t4
 
     lw  $t6, 384($t3)
+    beq $t6, $t5, check_drawable_horizontal_D
+    j  End_D
+
+check_drawable_horizontal_D:
+    beq $s4, 0, draw_capsule_outline_D
+    la $t1, DRMARIO_GRID
+    lw $t5, COLOR_BLACK
+    sll $t2, $s1, 7
+    add $t3, $t1, $t2
+    sll $t4, $s0, 2
+    add $t3, $t3, $t4
+
+    lw  $t6, 388($t3)
     beq $t6, $t5, draw_capsule_outline_D
     j  End_D
+
 
 draw_capsule_outline_D:
   move $a0, $s0
@@ -168,7 +183,11 @@ respond_to_S:
     move $a1, $s1
     jal Detect_vertical_collision
     beq $v0, $zero, increase_Y_coordinate
-    j  End_S
+    addi $sp, $sp, -4
+    sw $v0, 0($sp)
+    addi $sp, $sp, -4
+    sw $v1, 0($sp)
+    j  detect_4
 
 increase_Y_coordinate:
     addi    $s1, $s1, 1          # move Y position down by 1
@@ -179,7 +198,19 @@ End_S:
     lw $ra, 0($sp)
     addi $sp, $sp, 4
     j      poll_keyboard_return
-  
+
+detect_4:
+  jal save_capsule
+  jal check_horizontal_4_region
+  jal check_vertical_4_region
+ jal check_2x2_region
+  lw $v1, 0($sp)
+  addi $sp, $sp, 4
+  lw $v0, 0($sp)
+  addi $sp, $sp, 4
+  lw $ra, 0($sp)
+  addi $sp, $sp, 4
+  j      poll_keyboard_return
 ##############################################################################
 respond_to_W:
     # Respond to key 'w': rotate capsule
@@ -214,8 +245,22 @@ check_drawable_W:
     add $t3, $t3, $t4
 
     lw  $t6, 256($t3)
+    beq $t6, $t5, check_drawable_horizontal_W
+    j  End_W
+
+check_drawable_horizontal_W:
+    beq $s4, 0, draw_capsule_outline_W
+    la $t1, DRMARIO_GRID
+    lw $t5, COLOR_BLACK
+    sll $t2, $s1, 7
+    add $t3, $t1, $t2
+    sll $t4, $s0, 2
+    add $t3, $t3, $t4
+
+    lw  $t6, 260($t3)
     beq $t6, $t5, draw_capsule_outline_W
     j  End_W
+
 
 draw_capsule_outline_W:
   move $a0, $s0
@@ -381,8 +426,6 @@ vertical_save_outline:
 End_Save_outline:
     jr      $ra
 
-#############################################################################
-check_for_deletion:
 ##############################################################################
 ## The vertical collision detect function
 ## $a0: the x coordinate of the capsule
@@ -585,7 +628,7 @@ all_black_6:
     j End_Rotate_Detect
 End_Rotate_Detect:
     jr $ra
-##############################################################################
+    
 ##############################################################################
 # check_horizontal_4_region:
 # 扫描区域：Y:6~29，X:3~16（检测连续4个像素：覆盖 X: col, col+1, col+2, col+3）
@@ -595,7 +638,7 @@ End_Rotate_Detect:
 
 check_horizontal_4_region:
     li    $t0, 6             # $t0 = 当前 Y 坐标，从6开始
-    lw    $t9, ADDR_DSPL     # $t9 = 位图基地址
+    la    $t9, DRMARIO_GRID     # $t9 = 位图基地址
 
 row_loop_h:
     bgt   $t0, 29, no_match_horizontal  # 如果当前 Y > 29，区域扫描完毕
@@ -606,11 +649,13 @@ col_loop_h:
     bgt   $t1, 16, next_row_horizontal  # 如果当前 X > 16，跳到下一行
 
     # 计算像素地址
-    li    $t2, 32          
-    mul   $t3, $t0, $t2      # t3 = Y * 32
-    add   $t3, $t3, $t1      # t3 = Y*32 + X
-    sll   $t3, $t3, 2        # 字节偏移 = t3 * 4
-    add   $t4, $t9, $t3      # t4 = 当前像素地址 (X,Y)
+   # li    $t2, 32          
+  #  mul   $t3, $t0, $t2      # t3 = Y * 32
+     la $t9, DRMARIO_GRID
+    sll   $t3, $t0, 7          # Compute Y offset: t2 = a1 * 128
+    add   $t4, $t9, $t3      # t3 = Y*32 + X
+    sll   $t3, $t1, 2        # 字节偏移 = t3 * 4
+    add   $t4, $t4, $t3      # t4 = 当前像素地址 (X,Y)
 
     # 加载连续4个像素的颜色
     lw    $t5, 0($t4)        # pixel (X,Y)
@@ -658,7 +703,7 @@ no_match_horizontal:
 # 如果未找到，则返回 $v0 = 0, $v1 = 0
 check_vertical_4_region:
     li    $t0, 6             # $t0 = 当前 Y 坐标，从6开始（保证 Y+3 ≤29，所以最大 Y 为26）
-    lw    $t9, ADDR_DSPL     # $t9 = 位图基地址
+    la    $t9, DRMARIO_GRID    # $t9 = 位图基地址
 
 row_loop_v:
     bgt   $t0, 26, no_match_vertical   # 如果 Y > 26，则区域扫描完毕
@@ -669,11 +714,13 @@ col_loop_v:
     bgt   $t1, 19, next_row_vertical   # 如果 X > 19，则本行扫描完毕
 
     # 计算当前像素地址
-    li    $t2, 32
-    mul   $t3, $t0, $t2      # t3 = Y * 32
-    add   $t3, $t3, $t1      # t3 = Y*32 + X
-    sll   $t3, $t3, 2        # 字节偏移
-    add   $t4, $t9, $t3      # t4 = 当前像素 (X,Y) 地址
+   # li    $t2, 32
+   # mul   $t3, $t0, $t2      # t3 = Y * 32
+    la $t9, DRMARIO_GRID
+    sll   $t3, $t0, 7          # Compute Y offset: t2 = a1 * 128
+    add   $t4, $t9, $t3      # t3 = Y*32 + X
+    sll   $t3, $t1, 2        # 字节偏移 = t3 * 4
+    add   $t4, $t4, $t3      # t4 = 当前像素地址 (X,Y)
 
     lw    $t5, 0($t4)        # pixel (X,Y)
     # 如果当前像素为黑色，则跳过检测
@@ -727,7 +774,7 @@ no_match_vertical:
 # 如果没有找到，则返回 $v0=0, $v1=0。
 check_2x2_region:
     li    $t0, 6           # $t0 = 当前 Y 坐标（从6开始）
-    lw    $t9, ADDR_DSPL   # $t9 = 位图基地址
+    la    $t9, DRMARIO_GRID   # $t9 = 位图基地址
 
     # 预先加载黑色值到 $a3（此后在每次检测中用于比较与填色）
     la    $a3, COLOR_BLACK
@@ -742,11 +789,13 @@ col_loop_2x2:
     bgt   $t1, 18, next_row_2x2   # 如果当前 X > 18，则该行扫描完毕
 
     # 计算像素 (X, Y) 的地址
-    li    $t2, 32          # 每行 32 个像素
-    mul   $t3, $t0, $t2    # $t3 = Y * 32
-    add   $t3, $t3, $t1    # $t3 = Y*32 + X
-    sll   $t3, $t3, 2      # $t3 = (Y*32 + X)*4
-    add   $t4, $t9, $t3    # $t4 = 当前像素 (X,Y) 的地址
+   # li    $t2, 32          # 每行 32 个像素
+   # mul   $t3, $t0, $t2    # $t3 = Y * 32
+    la $t9, DRMARIO_GRID
+    sll   $t3, $t0, 7          # Compute Y offset: t2 = a1 * 128
+    add   $t4, $t9, $t3      # t3 = Y*32 + X
+    sll   $t3, $t1, 2        # 字节偏移 = t3 * 4
+    add   $t4, $t4, $t3      # t4 = 当前像素地址 (X,Y)
 
     # 加载2×2方块的4个像素：
     lw    $t5, 0($t4)      # top-left pixel (X, Y) → $t5

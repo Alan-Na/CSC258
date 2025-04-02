@@ -2,7 +2,7 @@
 # - Unit width in pixels: 2
 # - Unit height in pixels: 2
 # - Display width in pixels: 64
-# - Display height in pixels: 128
+# - Display height in pixels: 256
 # - Base Address for Display: 0x10008000 ($gp)
 ##############################################################################
 
@@ -568,6 +568,111 @@ draw_drmario_end:
     lw $ra, 0($sp)            # recover $ra
     addi $sp, $sp, 4          # recover sp
     jr   $ra                # 返回调用者
-
-
+##############################################################################
+draw_virus:
+  addi $sp, $sp, -4         # adjust stack pointer
+  sw $ra, 0($sp)            # save $ra
   
+  jal draw_red_virus
+  jal draw_yellow_virus
+  jal draw_blue_virus
+
+  lw $ra, 0($sp)            # recover $ra
+  addi $sp, $sp, 4          # recover sp
+  jr $ra
+## draw red
+draw_red_virus:
+  addi $sp, $sp, -4         # adjust stack pointer
+    sw $ra, 0($sp)            # save $ra
+    # 加载三个数组的起始地址到临时寄存器中
+    la   $t0, x_coords_red      # $t0 指向 x 坐标数组
+    la   $t1, y_coords_red      # $t1 指向 y 坐标数组
+    la   $t2, colors_red        # $t2 指向颜色数组
+
+    li   $t3, 125          # 循环计数器：数据总数
+
+draw_red_loop:
+    beq  $t3, $zero, draw_red_end  # 当计数器为0时结束循环
+
+    lw   $a0, 0($t0)        # 取出当前的 x 坐标，传入 $a0
+    lw   $a1, 0($t1)        # 取出当前的 y 坐标，传入 $a1
+    lw   $a2, 0($t2)        # 取出当前的颜色，传入 $a2
+
+    jal  paint_pixel        # 调用 paint_pixel（注意 paint_pixel 必须遵循 caller-saved 约定）
+
+    # 更新指针，指向下一个数据
+    addi $t0, $t0, 4        # 下一个 x 坐标（每个 .word 占4字节）
+    addi $t1, $t1, 4        # 下一个 y 坐标
+    addi $t2, $t2, 4        # 下一个颜色
+
+    addi $t3, $t3, -1       # 循环计数器减1
+    j    draw_red_loop  # 跳回循环开始
+
+draw_red_end:
+    lw $ra, 0($sp)            # recover $ra
+    addi $sp, $sp, 4          # recover sp
+    jr   $ra                # 返回调用者
+## draw yellow
+draw_yellow_virus:
+  addi $sp, $sp, -4         # adjust stack pointer
+    sw $ra, 0($sp)            # save $ra
+    # 加载三个数组的起始地址到临时寄存器中
+    la   $t0, x_coords_yellow      # $t0 指向 x 坐标数组
+    la   $t1, y_coords_yellow      # $t1 指向 y 坐标数组
+    la   $t2, colors_yellow       # $t2 指向颜色数组
+
+    li   $t3, 105          # 循环计数器：数据总数
+
+draw_yellow_loop:
+    beq  $t3, $zero, draw_yellow_end  # 当计数器为0时结束循环
+
+    lw   $a0, 0($t0)        # 取出当前的 x 坐标，传入 $a0
+    lw   $a1, 0($t1)        # 取出当前的 y 坐标，传入 $a1
+    lw   $a2, 0($t2)        # 取出当前的颜色，传入 $a2
+
+    jal  paint_pixel        # 调用 paint_pixel（注意 paint_pixel 必须遵循 caller-saved 约定）
+
+    # 更新指针，指向下一个数据
+    addi $t0, $t0, 4        # 下一个 x 坐标（每个 .word 占4字节）
+    addi $t1, $t1, 4        # 下一个 y 坐标
+    addi $t2, $t2, 4        # 下一个颜色
+
+    addi $t3, $t3, -1       # 循环计数器减1
+    j    draw_yellow_loop  # 跳回循环开始
+
+draw_yellow_end:
+    lw $ra, 0($sp)            # recover $ra
+    addi $sp, $sp, 4          # recover sp
+    jr   $ra                # 返回调用者
+## draw blue
+draw_blue_virus:
+  addi $sp, $sp, -4         # adjust stack pointer
+    sw $ra, 0($sp)            # save $ra
+    # 加载三个数组的起始地址到临时寄存器中
+    la   $t0, x_coords_blue      # $t0 指向 x 坐标数组
+    la   $t1, y_coords_blue      # $t1 指向 y 坐标数组
+    la   $t2, colors_blue       # $t2 指向颜色数组
+
+    li   $t3, 108          # 循环计数器：数据总数
+
+draw_blue_loop:
+    beq  $t3, $zero, draw_blue_end  # 当计数器为0时结束循环
+
+    lw   $a0, 0($t0)        # 取出当前的 x 坐标，传入 $a0
+    lw   $a1, 0($t1)        # 取出当前的 y 坐标，传入 $a1
+    lw   $a2, 0($t2)        # 取出当前的颜色，传入 $a2
+
+    jal  paint_pixel        # 调用 paint_pixel（注意 paint_pixel 必须遵循 caller-saved 约定）
+
+    # 更新指针，指向下一个数据
+    addi $t0, $t0, 4        # 下一个 x 坐标（每个 .word 占4字节）
+    addi $t1, $t1, 4        # 下一个 y 坐标
+    addi $t2, $t2, 4        # 下一个颜色
+
+    addi $t3, $t3, -1       # 循环计数器减1
+    j    draw_blue_loop  # 跳回循环开始
+
+draw_blue_end:
+    lw $ra, 0($sp)            # recover $ra
+    addi $sp, $sp, 4          # recover sp
+    jr   $ra                # 返回调用者
