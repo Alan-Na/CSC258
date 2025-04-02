@@ -679,6 +679,7 @@ draw_blue_end:
 ##############################################################################
 draw_game_over:
     jal reset_memory
+    jal play_background_music
     # 加载三个数组的起始地址到临时寄存器中
     la   $t0, x_coords_over      # $t0 指向 x 坐标数组
     la   $t1, y_coords_over     # $t1 指向 y 坐标数组
@@ -703,6 +704,7 @@ draw_over_loop:
     j    draw_over_loop  # 跳回循环开始
 
 draw_over_end:
+  jal play_background_music
     lw      $t0, ADDR_KBRD        # $t0 = keyboard base address
     lw      $t8, 0($t0)           # 读取键盘状态
     bne     $t8, 1, draw_over_end
